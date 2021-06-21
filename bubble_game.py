@@ -24,6 +24,7 @@ class grid:
                 location = i
                 break
         if(self.cube[location][col].value == val):
+            print(location,col,val)
             self.detect(location,col,val)
     def detect(self,x,y,v):
         if(y>self.width//10):
@@ -43,11 +44,12 @@ class grid:
 
     def time_update(self,t):
         #time.sleep()
-        if self.timer<9 and t%5000==0:
+        if self.timer<9 and t%10000==0:
             self.timer  +=1
             self.cube_change()
-        
-        #print(self.timer)
+        elif self.timer ==9 and t%10000==0:
+            self.cube_change()
+        # print(self.timer)
     def cube_change(self):
         for i in range(self.timer,0,-1):
             for j in range(self.col):
@@ -58,17 +60,21 @@ class grid:
         pygame.display.update()
 
 class bubble:
-    def __init__(self,col,value,width,height,win):
+    def __init__(self,row,col,value,width,height,win):
         self.value = value
         self.width = width
         self.height = height
         self.win = win
         self.col = col
         self.gap = width /10
+        self.row = row
         #pygame.draw.rect(self.win,(0,0,0),(width/2-15,540,30,30),3)
     def draw(self):
         r = self.col*self.gap
-        pygame.draw.rect(self.win,(self.value*25,self.value*50%255,self.value*100%255),(r,540,self.gap,self.gap),0)
+        if self.value == -1:
+            pygame.draw.rect(self.win,(255,255,255),(r,self.row*self.gap,self.gap,self.gap),0)
+        else:
+            pygame.draw.rect(self.win,(self.value*25,self.value*50%255,self.value*100%255),(r,self.row*self.gap,self.gap,self.gap),0)
     def move(self,direction):
         if direction == "right":
             r = self.col*self.gap
@@ -87,7 +93,22 @@ class bubble:
     def set(self,val):
         if(self.col+val<10 and self.col+val>=0):
              self.col+=val
-    
+    def move_up(self,t):
+        if t%100 == 0 and self.row >=0 and self.value!=-1: 
+            self.clean()
+            self.row = self.row -1
+            self.draw()
+        if self.row <0:
+            self.reset()
+    def reset(self):
+        self.row =10
+        self.col = 0
+        self.value =-1
+    def clean(self):
+        x = self.col*self.gap
+        y = self.row*self.gap
+        pygame.draw.rect(self.win,(255,255,255),(x,y,self.gap,self.gap),0)
+
     def attack(self):
         return self.value,self.col
 
@@ -137,18 +158,30 @@ def main():
     height = 600
     pygame.display.set_caption("Bubble")
     board = grid(10,10,540,600,win)
-    bub = bubble(0,1,540,600,win)
-    bub.draw()
-    
+
     page = 1
     fnt_80 = pygame.font.SysFont("comicsans",80)
     #win.blit(text_title,(width/2-30,410))
     run =True
     time  =0
-
+    bullet_lst = [bubble(10,0,-1,540,600,win) for i in range(5)]
+    bub = bubble(10,1,1,540,600,win)
+    bub.draw()
     while run:
         board.time_update(time)
         board.show()
+        for i in bullet_lst:
+            if i.row<10:
+                if i.value == board.cube[i.row][i.col].value:
+                    val,col = i.attack()
+                    board.attack(val,col)
+                    i.reset()
+                elif i.value !=board.cube[i.row][i.col].value and i.value!=-1 and board.cube[i.row][i.col].value!=0:
+                    i.reset()
+            i.move_up(time)
+            i.draw()
+        
+        bub.draw()
         time+=1
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -161,8 +194,13 @@ def main():
                 if event.key == pygame.K_SPACE:
                     bub.draw_change()
                 if event.key == pygame.K_RETURN:
-                    val,col = bub.attack()
-                    board.attack(val,col)
+                    for i in range(5):
+                        if bullet_lst[i].value ==-1:
+                            bullet_lst[i].value = bub.value
+                            bullet_lst[i].col = bub.col
+                            break
+                    
+                    
 
 
 
