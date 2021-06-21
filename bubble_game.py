@@ -22,10 +22,25 @@ class grid:
         for i in range(self.row-1,0,-1):
             if self.cube[i][col].value !=0:
                 location = i
-                print(i)
                 break
         if(self.cube[location][col].value == val):
-            self.cube[location][col].clean()
+            self.detect(location,col,val)
+    def detect(self,x,y,v):
+        if(y>self.width//10):
+            return 
+        self.cube[x][y].clean()
+        if self.cube[x+1][y].value == v :
+            self.detect(x+1,y,v)
+        if y+1 <10:
+            if self.cube[x][y+1].value == v :
+                self.detect(x,y+1,v)
+        if self.cube[x-1][y].value == v:
+            self.detect(x-1,y,v)
+        if self.cube[x][y-1].value == v and y-1>=0:
+            self.detect(x,y-1,v)
+
+
+
     def time_update(self,t):
         #time.sleep()
         if self.timer<9 and t%5000==0:
