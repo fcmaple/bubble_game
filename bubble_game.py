@@ -13,6 +13,7 @@ class grid:
         self.win = window
         self.cube =[[cube(i,j,width,height,window,0)for j in range(col)] for i in range(row)]
         self.timer = 0
+        self.gap = self.width //col
     def show(self):
         for i in range(self.timer):
             for j in range(self.col):
@@ -39,7 +40,23 @@ class grid:
             self.detect(x-1,y,v)
         if self.cube[x][y-1].value == v and y-1>=0:
             self.detect(x,y-1,v)
+    def shoot(self,angle,x,y,x_end,y_end,v):
+        x_step = int((x_end-x)/(15))
+        y_step = int((y_end-y)/(15))
+        x_start = x
+        y_start = y
 
+        for i in range(15):
+            y_start += y_step
+            x_start += x_step
+            ccol = int(x_start//self.gap)
+            rrow = int(y_start//self.gap)
+            print(i,rrow,ccol)
+            if rrow <self.row:
+                if self.cube[rrow][ccol].value==v:
+                    self.detect(rrow,ccol,v)
+                    break
+            
 
 
     def time_update(self,t):
@@ -66,11 +83,58 @@ class bubble:
         self.height = height
         self.win = win
         self.col = col
-        self.gap = width /10
+        self.gap = width /11
         self.row = row
-        #pygame.draw.rect(self.win,(0,0,0),(width/2-15,540,30,30),3)
+        self.x = (col+0.5)*self.gap
+        self.y = (row+0.5)*self.gap
+        self.x_end = 0
+        self.y_end = 0
+    def draw_line(self,visible):
+        
+        if visible:
+            if self.angle ==0:
+                pygame.draw.line(self.win,(0,0,0),((self.col+0.5)*self.gap,self.row*self.gap),((self.col+0.5)*self.gap,0),3)
+                self.x_end = (self.col+0.5)*self.gap
+                self.y_end = 0
+            else:
+                pygame.draw.line(self.win,(0,0,0),((self.col+0.5)*self.gap,self.row*self.gap),((self.col+0.5)*self.gap+self.angle*110,0),3)
+                self.slope_1 =  (self.row*self.gap/self.angle*110)
+                self.x_end = (self.col+0.5)*self.gap+self.angle*110
+                self.y_end = 0
+                if(self.col+0.5)*self.gap+self.angle*110>self.width:
+                    #pygame.draw.line(self.win,(0,0,0),((self.col+0.5)*self.gap,self.row*self.gap),(self.width,((self.col+0.5)*self.gap+angle*110)*(2/abs(angle)+2)),3)
+                    pygame.draw.line(self.win,(0,0,0),(self.width+2*110,self.row*self.gap),(self.width+220-self.angle*110,0),3)
+                    self.slope_2 = -(self.row*self.gap/self.angle*110)
+                    self.x = self.width
+                    self.y = (self.row+0.5)*self.gap - (self.row+0.5)*(1-self.width/2)/self.angle*110
+                    self.x_end = self.width+220-self.angle*110
+                    self.y_end = 0
+
+                elif (self.col+0.5)*self.gap+self.angle*110<0:
+                    #pygame.draw.line(self.win,(0,0,0),((self.col+0.5)*self.gap,self.row*self.gap),(0,((self.col+0.5)*self.gap+angle*110)*(2/abs(angle)+2)),3)
+                    pygame.draw.line(self.win,(0,0,0),(0-2*110,self.row*self.gap),(0-220-self.angle*110,0),3)
+                    self.slope_2 = -(self.row*self.gap/self.angle*110)
+                    self.x = 0
+                    self.y = (self.row+0.5)*self.gap - (self.row+0.5)*(1-self.width/2)/self.angle*110
+                    self.x_end = 0-220-self.angle*110
+                    self.y_end = 0
+                
+
+    def line_clean(self):
+        if self.angle == 0:
+            pygame.draw.line(self.win,(255,255,255),((self.col+0.5)*self.gap,self.row*self.gap),((self.col+0.5)*self.gap,0),3)
+        else:
+            pygame.draw.line(self.win,(255,255,255),((self.col+0.5)*self.gap,self.row*self.gap),((self.col+0.5)*self.gap+self.angle*110,0),3)
+            if (self.col+0.5)*self.gap+self.angle*110>self.width:
+                #pygame.draw.line(self.win,(255,255,255),((self.col+0.5)*self.gap,self.row*self.gap),(self.width,((self.col+0.5)*self.gap+self.angle*110)*(2/self.angle+2)),3)
+                pygame.draw.line(self.win,(255,255,255),(self.width+2*110,self.row*self.gap),(self.width+220-self.angle*110,0),3)
+            elif (self.col+0.5)*self.gap+self.angle*110<0:
+                #pygame.draw.line(self.win,(255,255,255),((self.col+0.5)*self.gap,self.row*self.gap),(0,((self.col+0.5)*self.gap+self.angle*110)*(2/abs(self.angle)+2)),3)
+                pygame.draw.line(self.win,(255,255,255),(0-2*110,self.row*self.gap),(0-220-self.angle*110,0),3)
+            
     def draw(self):
         r = self.col*self.gap
+        
         if self.value == -1:
             pygame.draw.rect(self.win,(255,255,255),(r,self.row*self.gap,self.gap,self.gap),0)
         else:
@@ -94,14 +158,17 @@ class bubble:
         if(self.col+val<10 and self.col+val>=0):
              self.col+=val
     def move_up(self,t):
-        if t%100 == 0 and self.row >=0 and self.value!=-1: 
+        if t%1000 == 0 and self.row >=0 and self.value!=-1 and self.col>0 and self.col<10:  
             self.clean()
-            self.row = self.row -1
+
+            print(self.x,self.y)
+            self.col +=1
+            self.row -=3 
             self.draw()
-        if self.row <0:
+        if self.row <0 or self.col <0 or  self.col>=10:
             self.reset()
     def reset(self):
-        self.row =10
+        self.row =13
         self.col = 0
         self.value =-1
     def clean(self):
@@ -111,6 +178,8 @@ class bubble:
 
     def attack(self):
         return self.value,self.col
+    def set_angle(self,angle):
+        self.angle = angle
 
 
 
@@ -123,7 +192,9 @@ class cube:
         self.width = width
         self.win = win
         self.value = val
-        self.gap = width/10
+        self.gap = width/11
+
+
     def draw(self):
         x = self.col*self.gap
         y = self.row*self.gap
@@ -152,20 +223,24 @@ class cube:
 
 
 def main():
-    win = pygame.display.set_mode((540,600))
+    win = pygame.display.set_mode((440,600))
     win.fill((255,255,255))
-    width = 540
+    width = 440
     height = 600
     pygame.display.set_caption("Bubble")
-    board = grid(10,10,540,600,win)
+    board = grid(13,11,440,600,win)
 
     page = 1
     fnt_80 = pygame.font.SysFont("comicsans",80)
     #win.blit(text_title,(width/2-30,410))
     run =True
     time  =0
-    bullet_lst = [bubble(10,0,-1,540,600,win) for i in range(5)]
-    bub = bubble(10,1,1,540,600,win)
+    angle = 0
+    bullet_lst = [bubble(13,0,-1,440,600,win) for i in range(5)]
+    bub = bubble(14,5,1,440,600,win)
+    bub.set_angle(angle)
+    bub.draw_line(True)
+    
     bub.draw()
     while run:
         board.time_update(time)
@@ -178,7 +253,7 @@ def main():
                     i.reset()
                 elif i.value !=board.cube[i.row][i.col].value and i.value!=-1 and board.cube[i.row][i.col].value!=0:
                     i.reset()
-            i.move_up(time)
+            #i.move_up(time)
             i.draw()
         
         bub.draw()
@@ -188,17 +263,33 @@ def main():
                 run = False
             if event.type == pygame.KEYDOWN and page ==1:
                 if event.key == pygame.K_RIGHT:
-                    bub.move("right")
+                    bub.line_clean()
+                    #bub.move("right")
+                    angle +=1
+                    bub.set_angle(angle)
+                    bub.draw_line(True)
+                    
                 if event.key == pygame.K_LEFT:
-                    bub.move("left")
+                    bub.line_clean()
+                    angle -=1
+                    bub.set_angle(angle)
+                    bub.draw_line(True)
+                    #bub.move("left")
                 if event.key == pygame.K_SPACE:
                     bub.draw_change()
                 if event.key == pygame.K_RETURN:
-                    for i in range(5):
+                    print(bub.angle,bub.x,bub.y,bub.x_end,bub.y_end,bub.value)
+                    board.shoot(bub.angle,bub.x,bub.y,bub.x_end,bub.y_end,bub.value)
+                    print("shoot")
+
+                    
+                    
+                    '''for i in range(5):
                         if bullet_lst[i].value ==-1:
                             bullet_lst[i].value = bub.value
                             bullet_lst[i].col = bub.col
-                            break
+                            bullet_lst[i].angle = bub.angle
+                            break'''
                     
                     
 
